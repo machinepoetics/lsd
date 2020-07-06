@@ -11,6 +11,7 @@ export * from "./Shape";
 export * from "./Sketch";
 export * from "./SketchChild";
 export * from "./Survey";
+export * from "./SurveyCanvas";
 export * from "./ThreeJS";
 export * from "./ThreeJS3D";
 export * from "./Timer";

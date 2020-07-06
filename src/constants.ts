@@ -12,6 +12,7 @@ export const CANVAS = "Canvas";
 export const CANVAS_GENERATIVE = "Canvas (Generative)";
 export const SHAPE = "Shape";
 export const THREE_JS = "3D";
+export const SURVEY_CANVAS = "Survey Canvas (in development)"
 
 // === CONFIGURATION === //
 

@@ -6,10 +6,12 @@ import {
   CANVAS_GENERATIVE,
   NONE,
   SEGMENT,
-  ROW
+  ROW,
+  SURVEY_CANVAS
 } from '../constants'
 import { Plane as PlaneID, ValueOf } from '../types'
 import { defaultFontProps } from '../styling'
+import { useEffect } from 'react'
 
 const PLANES = [
   NONE,
@@ -17,6 +19,7 @@ const PLANES = [
   // AVERAGE
   CANVAS,
   CANVAS_GENERATIVE,
+  SURVEY_CANVAS
 ] as const
 
 type TPlane = typeof PLANES
@@ -31,7 +34,7 @@ export const Plane: React.FC<Props> = ({
   plane: currentPlane,
   setPlane,
   eraseSketch
-}) =>
+}) => 
   <Flex
     flexDirection={ROW}
     alignItems="center"

@@ -39,6 +39,7 @@ import {
   Shape,
   SketchChild,
   Survey,
+  SurveyCanvas,
   Timer
 } from '../components'
 import {
@@ -60,7 +61,8 @@ import {
   Y,
   TIMESTAMPS,
   SEGMENT,
-  SURVEY
+  SURVEY,
+  SURVEY_CANVAS
 } from '../constants';
 import { BLACK, GRAY, defaultFontProps } from '../styling'
 import { Coordinate, Plane as PlaneID } from '../types'
@@ -197,6 +199,7 @@ const Base: React.FC<Props> = ({
       setMousePosition(coordinates)
     }
   }, [])
+
 
   const paint = useCallback((event: MouseEvent) => {
     if (isPainting) {
@@ -470,6 +473,20 @@ const Base: React.FC<Props> = ({
       flexDirection={[COLUMN, COLUMN, ROW]}
       mb={3}
     >
+      {plane === SURVEY_CANVAS &&
+      <Box>
+        <SurveyCanvas 
+          canvasRef={canvasRef}
+          erase={erase}
+          height={height}
+          width={width}
+          margin={margin}
+        />
+
+      </Box>
+      }
+
+      {plane !== SURVEY_CANVAS &&
       <Box>
         <canvas ref={canvasRef}
           height={height}
@@ -481,6 +498,8 @@ const Base: React.FC<Props> = ({
         />
         <Timer time={time} />
       </Box>
+      }
+      
 
       {/* {plane === AVERAGE &&
         <Average
