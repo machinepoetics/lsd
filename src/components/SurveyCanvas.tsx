@@ -30,16 +30,23 @@ const Base: React.FC<Props> = ({
   width,
   margin
 }) => {
-  const [strength, setStrength] = useState(1)
+  const [strength, setStrength] = useState(1.0)
   const [userId, setUserId] = useState(generateUID())
   const [styleData, setStyleData] = useState<any>()
   const [styleIndex, setStyleIndex] = useState(0)
+  const [sampleInterval, setSampleInterval] = useState(2)
+  const [reloadStyle, setReloadStyle] = useState(false)
 
   const [cursorStyle, setCursorStyle] = useState('auto')
 
   const [isPainting, setIsPainting] = useState(false)
 
-  const [direction, setDirection] = useState<Coordinate>({x: 0, y: 0})
+  const [curve, setCurve] = useState({
+    direction: {x:0, y:0},
+    lastStroke: {x:0, y:0},
+    strokeDirection: {x:0, y:0},
+    remainingDist: 0
+  })
   
   const [lastMousePosition, setLastMousePosition] = useState<Coordinate | undefined>(undefined)
 
@@ -57,8 +64,10 @@ const Base: React.FC<Props> = ({
         styles.dy.push(parseFloat(element))
       });
       setStyleData(_ => styles)
+      
     });
-  }, [])
+    setReloadStyle(false)
+  }, [reloadStyle])
 
   const onMouseDown = useCallback((event: MouseEvent) => {
     if (!canvasRef || !canvasRef.current)
@@ -70,13 +79,20 @@ const Base: React.FC<Props> = ({
       console.log("begin painting")
       setIsPainting(true)
 
-      const pos = applyStyle(coordinates)
+      const newCurve = curve
+
+      const pos = applyStyle(coordinates, newCurve.direction, styleIndex)
+      newCurve.remainingDist = 0
+      newCurve.lastStroke = pos
       context.beginPath()
       context.moveTo(pos.x, pos.y)
 
+      setCurve(newCurve)
+
+      // hide cursor
       setCursorStyle('none');
     }
-  },[styleIndex, styleData, direction, isPainting])
+  },[styleIndex, styleData, curve, isPainting])
 
   const onMouseMove = useCallback((event: MouseEvent) => {
     if (!canvasRef || !canvasRef.current)
@@ -85,9 +101,12 @@ const Base: React.FC<Props> = ({
     const pos = getCoordinates(event)
     setLastMousePosition(pos)
 
+    const newCurve = curve
+
     if (!!pos && !!lastMousePosition) {
-      const dir = getDir(pos, lastMousePosition)
-      setDirection(dir)
+      const dir = getDir(lastMousePosition, pos)
+      newCurve.direction = dir
+      if (!isPainting) newCurve.strokeDirection = dir
     }
     if (isPainting) {
       const coordinates = getCoordinates(event)
@@ -95,15 +114,30 @@ const Base: React.FC<Props> = ({
       const context = canvas.getContext('2d')
       if (!context) return
 
-      const newPos = applyStyle(pos)
-      console.log(newPos)
-      context.lineTo(newPos.x, newPos.y)
-      context.stroke()
+      const dist = getDistance(pos, lastMousePosition)
+      newCurve.remainingDist += dist
+      const totalDist = newCurve.remainingDist
+      let newIndex = styleIndex
+      while (newCurve.remainingDist > sampleInterval) {
 
-      const newIndex = styleIndex < styleData.dx.length ? styleIndex + 1 : 0
+        const ratio = (totalDist - newCurve.remainingDist) / totalDist
+        const dir = normalize(lerpVector(curve.direction, newCurve.direction, ratio))
+        let newPos = applyStyle(pos, dir, newIndex)
+        //newCurve.strokeDirection = getDir(newCurve.lastStroke, newPos)
+        //const temp = lerpVector(newCurve.lastStroke, lastMousePosition, 0.5)
+        //context.quadraticCurveTo(temp.x, temp.y, newPos.x, newPos.y)
+        newPos = lerpVector(newCurve.lastStroke, newPos, 0.3)
+        context.lineTo(newPos.x, newPos.y)
+        context.stroke()
+        newCurve.lastStroke = newPos
+        newIndex = newIndex < styleData.dx.length ? newIndex + 1 : 0
+        newCurve.remainingDist -= sampleInterval
+        newCurve.lastStroke = newPos
+      }
       setStyleIndex(newIndex)
+      setCurve(newCurve)
     }
-  }, [styleIndex, styleData, direction, isPainting, lastMousePosition])
+  }, [styleIndex, styleData, curve, isPainting, lastMousePosition])
   
   const onMouseUp = useCallback((event: MouseEvent) => {
     if (!canvasRef || !canvasRef.current)
@@ -114,7 +148,8 @@ const Base: React.FC<Props> = ({
     const canvas: HTMLCanvasElement = canvasRef.current
     const context = canvas.getContext('2d')
     if (!!coordinates && !!context && isPainting) {
-      const pos = applyStyle(coordinates)
+      const pos = applyStyle(coordinates, curve.direction, styleIndex)
+      //context.quadraticCurveTo(curve.lastStroke.x, curve.lastStroke.y, pos.x, pos.y)
       context.lineTo(pos.x, pos.y)
       context.stroke()
       context.closePath()
@@ -123,12 +158,13 @@ const Base: React.FC<Props> = ({
       context.closePath()
     }
 
+    // show cursor
     setCursorStyle('auto');
-  }, [styleIndex, styleData, direction, isPainting])
+  }, [styleIndex, styleData, curve, isPainting])
 
   const onMouseLeave = useCallback((event: MouseEvent) => {
     onMouseUp(event)
-  }, [styleIndex, styleData, direction, isPainting])
+  }, [styleIndex, styleData, curve, isPainting])
 
   useEffect(() => {
     if (!canvasRef || !canvasRef.current)
@@ -161,22 +197,45 @@ const Base: React.FC<Props> = ({
     }
   }
 
-  const applyStyle = (pos : Coordinate): Coordinate => {
-    const dir : Coordinate = direction
-    const sx : number = styleData.dx[styleIndex]
-    const sy : number = styleData.dy[styleIndex]
-    return {x: pos.x + dir.x * strength * sx, y: pos.y + dir.y * strength * sy}
+  const applyStyle = (pos : Coordinate, dir : Coordinate, index : number): Coordinate => {
+    const sx : number = styleData.dx[index]
+    const sy : number = styleData.dy[index]
+    const bitang = {x: -dir.y, y: dir.x}
+    return {
+      x: pos.x + (dir.x * sx + bitang.x * sy) * strength, 
+      y: pos.y + (dir.y * sx + bitang.y * sy) * strength
+    }
   }
 
-  const getDir = (mousePos : Coordinate, oldMousePos : Coordinate) => {
-    const dir = {x: mousePos.x - oldMousePos.x, y: mousePos.y - oldMousePos.y}
+  const getDistance = (a : Coordinate, b : Coordinate) => {
+    const d2 = (a.x - b.x) ** 2 + (a.y - b.y) ** 2
+    return d2 > 0 ? Math.sqrt(d2) : 0
+  }
+
+  const lerpVector = (a : Coordinate, b : Coordinate, t : number) => {
+    return {
+      x : a.x + (b.x - a.x)*t,
+      y : a.y + (b.y - a.y)*t
+    }
+  }
+
+  const normalize = (a : Coordinate) => {
+    const len2 = a.x * a.x + a.y * a.y
+    if (len2 > 1e-8) {
+      const len = Math.sqrt(len2)
+      a.x /= len; a.y /= len;
+    }
+    return a
+  }
+
+  const getDir = (from : Coordinate, to : Coordinate) => {
+    const dir = {x: to.x - from.x, y: to.y - from.y}
     const len2 = dir.x * dir.x + dir.y * dir.y
     if (len2 > 1e-8) {
       const len = Math.sqrt(len2)
       dir.x /= len;
       dir.y /= len;
     }
-    console.log(dir)
     return dir
   }
 
@@ -193,7 +252,7 @@ const Base: React.FC<Props> = ({
     }}
   />
   <br></br>
-  <Label htmlFor='strength'>Strength</Label>
+  <Label htmlFor='strength'>Strength {strength}</Label>
   <Slider
     id='strength'
     name='strength'
@@ -205,7 +264,21 @@ const Base: React.FC<Props> = ({
     step={0.01}
   />
   <br></br>
+  <Label htmlFor='sampleInterval'>Sample Interval {sampleInterval}</Label>
+  <Slider
+    id='sampleInterval'
+    name='sampleInterval'
+    value={sampleInterval}
+    onChange={(evt) => {setSampleInterval(parseFloat(evt.target.value))}}
+    min={0.5}
+    max={10.0}
+    type={'range'}
+    step={0.01}
+  />
+  <br></br>
   <Button onClick={() => console.log(styleData)}>Submit</Button>
+  <br></br>
+  <Button onClick={() => setReloadStyle(true)}>Reload Style</Button>
   </>
 }
 

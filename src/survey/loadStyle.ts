@@ -1,6 +1,11 @@
 import {apiServer} from "./uri";
 
 export async function getRandomStyle(uid : any) {
+ const latent = []
+ for (let i = 0; i < 3; ++i) {
+   const val = Math.random() * 3 - 1.5
+   latent.push(val)
+ }
  return fetch(apiServer + "getStyle", {
     method: 'POST',
     headers: {
@@ -8,7 +13,7 @@ export async function getRandomStyle(uid : any) {
     },
     body: JSON.stringify({
       userId: uid,
-      random: 1,
+      latentVec: latent
     })
   });
 }
