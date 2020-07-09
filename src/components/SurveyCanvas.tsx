@@ -17,6 +17,8 @@ import { Label, Slider } from '@rebass/forms'
 type Props = {
   canvasRef: React.RefObject<HTMLCanvasElement>
   erase: boolean
+  isPainting: boolean
+  stylize: boolean
   height: number
   width: number
   margin: number
@@ -26,6 +28,8 @@ const Base: React.FC<Props> = ({
   configuration,
   canvasRef,
   erase,
+  isPainting,
+  stylize,
   height,
   width,
   margin
@@ -38,8 +42,6 @@ const Base: React.FC<Props> = ({
   const [reloadStyle, setReloadStyle] = useState(false)
 
   const [cursorStyle, setCursorStyle] = useState('auto')
-
-  const [isPainting, setIsPainting] = useState(false)
 
   const [curve, setCurve] = useState({
     direction: {x:0, y:0},
@@ -67,7 +69,7 @@ const Base: React.FC<Props> = ({
       
     });
     setReloadStyle(false)
-  }, [reloadStyle])
+  }, [reloadStyle, erase])
 
   const onMouseDown = useCallback((event: MouseEvent) => {
     if (!canvasRef || !canvasRef.current)
@@ -76,23 +78,27 @@ const Base: React.FC<Props> = ({
     const canvas: HTMLCanvasElement = canvasRef.current
     const context = canvas.getContext('2d')
     if (!!coordinates && !!context) {
-      console.log("begin painting")
-      setIsPainting(true)
-
-      const newCurve = curve
-
-      const pos = applyStyle(coordinates, newCurve.direction, styleIndex)
-      newCurve.remainingDist = 0
-      newCurve.lastStroke = pos
-      context.beginPath()
-      context.moveTo(pos.x, pos.y)
-
-      setCurve(newCurve)
-
-      // hide cursor
-      setCursorStyle('none');
+      if (stylize) {
+  
+        const newCurve = curve
+  
+        const pos = applyStyle(coordinates, newCurve.direction, styleIndex)
+        newCurve.remainingDist = 0
+        newCurve.lastStroke = pos
+        context.beginPath()
+        context.moveTo(pos.x, pos.y)
+  
+        setCurve(newCurve)
+  
+        // hide cursor
+        setCursorStyle('none');
+      }
+      else {
+        context.beginPath()
+        context.moveTo(coordinates.x, coordinates.y)
+      }
     }
-  },[styleIndex, styleData, curve, isPainting])
+  },[styleIndex, styleData, stylize, curve])
 
   const onMouseMove = useCallback((event: MouseEvent) => {
     if (!canvasRef || !canvasRef.current)
@@ -100,6 +106,18 @@ const Base: React.FC<Props> = ({
 
     const pos = getCoordinates(event)
     setLastMousePosition(pos)
+
+    if (!stylize) {
+      if (isPainting) {
+        const coordinates = getCoordinates(event)
+        const canvas: HTMLCanvasElement = canvasRef.current
+        const context = canvas.getContext('2d')
+        if (!context) return
+        context.lineTo(coordinates.x, coordinates.y)
+        context.stroke()
+      }
+      return
+    }
 
     const newCurve = curve
 
@@ -137,34 +155,38 @@ const Base: React.FC<Props> = ({
       setStyleIndex(newIndex)
       setCurve(newCurve)
     }
-  }, [styleIndex, styleData, curve, isPainting, lastMousePosition])
+  }, [styleIndex, styleData, stylize, curve, isPainting, lastMousePosition])
   
   const onMouseUp = useCallback((event: MouseEvent) => {
     if (!canvasRef || !canvasRef.current)
       return
-    setIsPainting(false)
     
     const coordinates = getCoordinates(event)
     const canvas: HTMLCanvasElement = canvasRef.current
     const context = canvas.getContext('2d')
-    if (!!coordinates && !!context && isPainting) {
+
+    if (!context) return
+
+    if (!stylize) {
+      context.closePath()
+      return
+    }
+
+    if (!!coordinates && isPainting) {
       const pos = applyStyle(coordinates, curve.direction, styleIndex)
       //context.quadraticCurveTo(curve.lastStroke.x, curve.lastStroke.y, pos.x, pos.y)
       context.lineTo(pos.x, pos.y)
       context.stroke()
-      context.closePath()
     }
-    else if (!!context) {
-      context.closePath()
-    }
+    context.closePath()
 
     // show cursor
     setCursorStyle('auto');
-  }, [styleIndex, styleData, curve, isPainting])
+  }, [styleIndex, styleData, stylize, curve, isPainting])
 
   const onMouseLeave = useCallback((event: MouseEvent) => {
     onMouseUp(event)
-  }, [styleIndex, styleData, curve, isPainting])
+  }, [styleIndex, styleData, stylize, curve, isPainting])
 
   useEffect(() => {
     if (!canvasRef || !canvasRef.current)
@@ -177,17 +199,35 @@ const Base: React.FC<Props> = ({
       strokeStyle: BLACK
     })
     canvas.addEventListener('mousedown', onMouseDown)
+
+    return () => {
+      canvas.removeEventListener('mousedown', onMouseDown)
+    }
+  }, [onMouseDown])
+
+  useEffect(() => {
+    if (!canvasRef || !canvasRef.current)
+        return
+    const canvas: HTMLCanvasElement = canvasRef.current
     canvas.addEventListener('mousemove', onMouseMove)
+
+    return () => {
+      canvas.removeEventListener('mousemove', onMouseMove)
+    }
+  }, [onMouseMove])
+  
+  useEffect(() => {
+    if (!canvasRef || !canvasRef.current)
+        return
+    const canvas: HTMLCanvasElement = canvasRef.current
     canvas.addEventListener('mouseleave', onMouseLeave)
     canvas.addEventListener('mouseup', onMouseUp)
 
     return () => {
-      canvas.removeEventListener('mousedown', onMouseDown)
-      canvas.removeEventListener('mousemove', onMouseMove)
       canvas.removeEventListener('mouseleave', onMouseLeave)
       canvas.removeEventListener('mouseup', onMouseUp)
     }
-  }, [onMouseDown, onMouseMove, onMouseLeave, onMouseUp])
+  }, [onMouseUp])
 
   const getCoordinates = (event: MouseEvent) => {
     const canvas: HTMLCanvasElement | null = canvasRef.current
@@ -251,34 +291,39 @@ const Base: React.FC<Props> = ({
       cursor: cursorStyle
     }}
   />
-  <br></br>
-  <Label htmlFor='strength'>Strength {strength}</Label>
-  <Slider
-    id='strength'
-    name='strength'
-    value={strength}
-    onChange={(evt) => {setStrength(parseFloat(evt.target.value))}}
-    min={0.0}
-    max={10.0}
-    type={'range'}
-    step={0.01}
-  />
-  <br></br>
-  <Label htmlFor='sampleInterval'>Sample Interval {sampleInterval}</Label>
-  <Slider
-    id='sampleInterval'
-    name='sampleInterval'
-    value={sampleInterval}
-    onChange={(evt) => {setSampleInterval(parseFloat(evt.target.value))}}
-    min={0.5}
-    max={10.0}
-    type={'range'}
-    step={0.01}
-  />
-  <br></br>
-  <Button onClick={() => console.log(styleData)}>Submit</Button>
-  <br></br>
-  <Button onClick={() => setReloadStyle(true)}>Reload Style</Button>
+  {stylize &&
+    <>
+    <br></br>
+    <Label htmlFor='strength'>Strength {strength}</Label>
+    <Slider
+      id='strength'
+      name='strength'
+      value={strength}
+      onChange={(evt) => {setStrength(parseFloat(evt.target.value))}}
+      min={0.0}
+      max={10.0}
+      type={'range'}
+      step={0.01}
+    />
+    <br></br>
+    <Label htmlFor='sampleInterval'>Sample Interval {sampleInterval}</Label>
+    <Slider
+      id='sampleInterval'
+      name='sampleInterval'
+      value={sampleInterval}
+      onChange={(evt) => {setSampleInterval(parseFloat(evt.target.value))}}
+      min={0.5}
+      max={10.0}
+      type={'range'}
+      step={0.01}
+    />
+    <br></br>
+    <Button onClick={() => console.log(styleData)}>Submit</Button>
+    <br></br>
+    <Button onClick={() => setReloadStyle(true)}>Reload Style</Button>
+    </>
+
+  }
   </>
 }
 

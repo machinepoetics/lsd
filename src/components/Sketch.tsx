@@ -197,6 +197,7 @@ const Base: React.FC<Props> = ({
     if (!!coordinates) {
       setIsPainting(true)
       setMousePosition(coordinates)
+      console.log("start paint from sketch")
     }
   }, [])
 
@@ -213,7 +214,7 @@ const Base: React.FC<Props> = ({
         dispatch(addTimestamp(now))
 
         if (points.length > 1) {
-          drawLine(mousePosition, newMousePosition)
+          //drawLine(mousePosition, newMousePosition)
         }
 
         setMousePosition(newMousePosition)
@@ -223,6 +224,7 @@ const Base: React.FC<Props> = ({
   }, [isPainting, mousePosition])
 
   const exitPaint = useCallback(() => {
+    console.log("mouse up from sketch")
     setIsPainting(false)
   }, [])
 
@@ -473,32 +475,19 @@ const Base: React.FC<Props> = ({
       flexDirection={[COLUMN, COLUMN, ROW]}
       mb={3}
     >
-      {plane === SURVEY_CANVAS &&
       <Box>
         <SurveyCanvas 
           canvasRef={canvasRef}
+          stylize={plane === SURVEY_CANVAS}
           erase={erase}
+          isPainting={isPainting}
           height={height}
           width={width}
           margin={margin}
         />
-
-      </Box>
-      }
-
-      {plane !== SURVEY_CANVAS &&
-      <Box>
-        <canvas ref={canvasRef}
-          height={height}
-          width={width}
-          style={{
-            border: `1px solid ${GRAY}`,
-            borderRadius: "5px"
-          }}
-        />
         <Timer time={time} />
+
       </Box>
-      }
       
 
       {/* {plane === AVERAGE &&
