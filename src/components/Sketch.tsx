@@ -197,7 +197,6 @@ const Base: React.FC<Props> = ({
     if (!!coordinates) {
       setIsPainting(true)
       setMousePosition(coordinates)
-      console.log("start paint from sketch")
     }
   }, [])
 
@@ -224,7 +223,6 @@ const Base: React.FC<Props> = ({
   }, [isPainting, mousePosition])
 
   const exitPaint = useCallback(() => {
-    console.log("mouse up from sketch")
     setIsPainting(false)
   }, [])
 
