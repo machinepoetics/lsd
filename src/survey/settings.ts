@@ -11,6 +11,8 @@ export const PARAMETERS_GROUP = {
     },
     'strong': {
         strength: 5,
-        sampleInterval: 4
+        sampleInterval: 4.5
     }
 }
+
+export const RANDOMIZE = false

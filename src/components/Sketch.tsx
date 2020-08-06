@@ -25,7 +25,8 @@ import {
   getRandomStyle,
   sendSketch,
   DRAWING_TASKS,
-  PARAMETERS_GROUP
+  PARAMETERS_GROUP,
+  RANDOMIZE
 } from '../survey'
 
 import { BLACK, GRAY, defaultFontProps } from '../styling'
@@ -78,10 +79,22 @@ const PROMPTS = {
   2: "Please draw " + TASKS[1],
   3: "Please draw " + TASKS[2]
 }
-const SECTION_PARAMETERS = {
-  1: 'control',
-  2: 'weak',
-  3: 'strong'
+
+let SECTION_PARAMETERS;
+if (RANDOMIZE) {
+  let arr = shuffleArray(['control', 'weak', 'strong'])
+  SECTION_PARAMETERS = {
+    1: arr[0],
+    2: arr[1],
+    3: arr[2]
+  }
+}
+else{ 
+  SECTION_PARAMETERS = {
+    1: 'control',
+    2: 'weak',
+    3: 'strong'
+  }
 }
 
 const Base: React.FC<Props> = ({
@@ -189,10 +202,9 @@ const Base: React.FC<Props> = ({
       sequence: sequence.slice(),
       strength: strength,
       sampleInterval: sampleInterval,
-      styles: styleData
+      styles: styleData,
+      prompt: PROMPTS[section]
     };
-    console.log('current submission')
-    console.log(newSubmission)
     setSubmission(newSubmission)
 
     eraseSurveyCanvas(canvasRef)
@@ -286,7 +298,7 @@ const Base: React.FC<Props> = ({
           {type: 'mouseTo', x: pos.x, y: pos.y, t: now}])
 
         newCurve.lastStroke = newPos
-        newIndex = newIndex < styleData.dx.length ? newIndex + 1 : 0
+        newIndex = newIndex < styleData.dx.length - 1 ? newIndex + 1 : 0
         newCurve.remainingDist -= sampleInterval
         newCurve.lastStroke = newPos
       }
