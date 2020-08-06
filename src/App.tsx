@@ -55,11 +55,12 @@ const App: React.FC = () =>
       {...defaultFontProps}
       fontSize={4}
       letterSpacing="0.1em"
-    >LATENT SHEEP DREAMING</Heading>
+      textAlign="center"
+    >DRAWING TESTS</Heading>
 
     <Sketch
-      height={400}
-      width={400}
+      height={600}
+      width={600}
     />
   </Box >
 
