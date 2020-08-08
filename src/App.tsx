@@ -33,6 +33,8 @@ import {
 } from './components'
 import { defaultFontProps } from './styling'
 
+import { TITLE } from './survey'
+
 library.add(
   faAngleDown,
   faAngleUp,
@@ -56,7 +58,7 @@ const App: React.FC = () =>
       fontSize={4}
       letterSpacing="0.1em"
       textAlign="center"
-    >DRAWING TESTS</Heading>
+    >{TITLE}</Heading>
 
     <Sketch
       height={600}

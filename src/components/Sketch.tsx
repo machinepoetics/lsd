@@ -26,7 +26,10 @@ import {
   sendSketch,
   DRAWING_TASKS,
   PARAMETERS_GROUP,
-  RANDOMIZE
+  RANDOMIZE,
+  CONFIRM_BOX,
+  INTRO_BOX,
+  ENDING_BOX
 } from '../survey'
 
 import { BLACK, GRAY, defaultFontProps } from '../styling'
@@ -112,7 +115,8 @@ const Base: React.FC<Props> = ({
   const [cursorStyle, setCursorStyle] = useState('auto')
   const [section, setSection] = useState<number>(1);
   const [lastMousePosition, setLastMousePosition] = useState<Coordinate | undefined>(undefined)
-  const [showConfirm, setShowConfirm] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(true)
+  const [showIntro, setShowIntro] = useState(true);
   const [showEnding, setShowEnding] = useState(false)
   const [submission, setSubmission] = useState<any>({
     1: false,
@@ -448,6 +452,7 @@ const Base: React.FC<Props> = ({
 
   return <>
     {showConfirm && 
+      <>
       <Flex width={0.5} 
         display='block' 
         style={{
@@ -457,9 +462,25 @@ const Base: React.FC<Props> = ({
           top: '50%',
           transform: 'translate(-50%, -50%)'
         }}>
-      <Box
+      {showIntro &&
+        <Box
         fontSize={3}>
-        Are you sure submit current section? After you submit, please go back to the Google Form to answer the Questionnaire Section {section}.
+        {INTRO_BOX}
+        <br></br>
+        <Flex>
+          <Button display='block' margin='auto'
+            bg='blue'
+            {...defaultFontProps}
+            sx={menuStyles}
+            onClick={() => {setShowIntro(false); setShowConfirm(false)}}>Confirm</Button>
+        </Flex>
+        
+      </Box>
+      }
+      {!showIntro &&
+        <Box
+        fontSize={3}>
+        {CONFIRM_BOX + section}.
         <br></br>
         <Flex>
           <Box width={1/2}>
@@ -478,10 +499,11 @@ const Base: React.FC<Props> = ({
           </Box>
         </Flex>
         
-        
       </Box>
-      </Flex>
+      }
       
+      </Flex>
+      </>
     }
     {showEnding &&
       <Flex width={0.5} 
@@ -494,11 +516,12 @@ const Base: React.FC<Props> = ({
           transform: 'translate(-50%, -50%)'
       }}>
         <Box>
-          Thanks for finishing the drawing tasks. Now please go back to the Google Form to answer the remaining questionnaire. 
+          {ENDING_BOX} 
           <br></br>
           Make sure to include your unique survey ID <b>{userId}</b> in the form.
           <CopyToClipboard 
             text={userId}
+            onCopy={() => setCopied(true)}
             style={{
               display: 'block',
               margin: 'auto'
@@ -510,26 +533,49 @@ const Base: React.FC<Props> = ({
         </Box>
       </Flex>
     }
-    {
-      <Flex width={width} margin='auto'>
-        <Box margin='auto' display='block'>
-        {
-          ACTIONS.map((action) =>
-          <Button
-            key={action.text}
-            onClick={action.fx}
-            bg={action.id === section ? 'blue' : 'gray'}
-            mb={3}
-            mr={2}
-            {...defaultFontProps}
-            sx={menuStyles}
-          >{action.text}</Button>
-          )
-        }
-        </Box>
-      </Flex>
-      
+        
+    {!showEnding &&
+      <Box 
+      style={{
+        position: 'fixed',
+        left: '10px',
+        top: '10px',
+      }}>
+      User ID: <b>{userId}</b> <br></br>
+      <CopyToClipboard 
+          text={userId}
+          onCopy={() => setCopied(true)}
+          style={{
+            display: 'block',
+            margin: 'auto'
+          }}
+          >
+        <button>Copy to clipboard</button>
+        </CopyToClipboard>
+        {copied && <Text color='blue' fontSize='12px'>Copied!</Text>}
+    </Box>
     }
+    
+
+    
+    <Flex width={width} margin='auto'>
+      <Box margin='auto' display='block'>
+      {
+        ACTIONS.map((action) =>
+        <Button
+          key={action.text}
+          onClick={action.fx}
+          bg={action.id === section ? 'blue' : 'gray'}
+          mb={3}
+          mr={2}
+          {...defaultFontProps}
+          sx={menuStyles}
+        >{action.text}</Button>
+        )
+      }
+      </Box>
+    </Flex>
+      
     {!showEnding &&
     <>
           <Box margin='auto' display='block'>
