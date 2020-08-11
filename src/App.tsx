@@ -26,6 +26,7 @@ import 'react-sliding-pane/dist/react-sliding-pane.css';
 import {
   Box,
   Heading,
+  Flex
 } from 'rebass'
 
 import {
@@ -51,7 +52,12 @@ library.add(
 )
 
 const App: React.FC = () =>
-  <Box px={3} width="100%">
+<>
+<Flex>
+<Box width="40%">
+<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdaCCk0ugceOjbN3NpCc0rzHoJ-LScOKHj3vWb150C5yWdXUg/viewform?embedded=true" width="100%" height="100%" frameBorder="0">Loading…</iframe>
+</Box>
+<Box px={3} width="60%">
     <Heading
       mb={3}
       {...defaultFontProps}
@@ -65,5 +71,12 @@ const App: React.FC = () =>
       width={600}
     />
   </Box >
+
+</Flex>
+
+
+  
+</>
+
 
 export default connect()(App)

@@ -29,7 +29,8 @@ import {
   RANDOMIZE,
   CONFIRM_BOX,
   INTRO_BOX,
-  ENDING_BOX
+  ENDING_BOX,
+  DEBUG
 } from '../survey'
 
 import { BLACK, GRAY, defaultFontProps } from '../styling'
@@ -38,7 +39,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { State } from '../reducers'
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 
-const DEBUG = true
 
 type Props = {
   width: number
@@ -453,14 +453,14 @@ const Base: React.FC<Props> = ({
   return <>
     {showConfirm && 
       <>
-      <Flex width={0.5} 
+      <Box width={0.4} 
         display='block' 
         style={{
           background: '#f0f0f0',
           position: 'fixed',
           left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)'
+          top: '35%',
+          //transform: 'translate(-50%, -50%)'
         }}>
       {showIntro &&
         <Box
@@ -502,7 +502,7 @@ const Base: React.FC<Props> = ({
       </Box>
       }
       
-      </Flex>
+      </Box>
       </>
     }
     {showEnding &&
@@ -538,10 +538,10 @@ const Base: React.FC<Props> = ({
       <Box 
       style={{
         position: 'fixed',
-        left: '10px',
+        right: '10px',
         top: '10px',
       }}>
-      User ID: <b>{userId}</b> <br></br>
+      Survey ID: <b>{userId}</b> <br></br>
       <CopyToClipboard 
           text={userId}
           onCopy={() => setCopied(true)}
@@ -578,9 +578,12 @@ const Base: React.FC<Props> = ({
       
     {!showEnding &&
     <>
+          {!showIntro &&
           <Box margin='auto' display='block'>
             <Text fontSize='17px' textAlign='center'>{PROMPTS[section]}</Text>
           </Box>
+          }
+          
           {!!!submission[section] && !showEnding &&
             <>
               <br></br>
