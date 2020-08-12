@@ -505,41 +505,14 @@ const Base: React.FC<Props> = ({
       </Box>
       </>
     }
-    {showEnding &&
-      <Flex width={0.5} 
-        display='block' 
-        style={{
-          background: '#f0f0f0',
-          position: 'fixed',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)'
-      }}>
-        <Box>
-          {ENDING_BOX} 
-          <br></br>
-          Make sure to include your unique survey ID <b>{userId}</b> in the form.
-          <CopyToClipboard 
-            text={userId}
-            onCopy={() => setCopied(true)}
-            style={{
-              display: 'block',
-              margin: 'auto'
-            }}
-            >
-          <button>Copy to clipboard</button>
-          </CopyToClipboard>
-          {copied && <Text color='blue' fontSize='12px'>Copied!</Text>}
-        </Box>
-      </Flex>
-    }
+    
         
-    {!showEnding &&
+    {
       <Box 
       style={{
         position: 'fixed',
-        right: '10px',
-        top: '10px',
+        left: '12%',
+        top: '3px',
       }}>
       Survey ID: <b>{userId}</b> <br></br>
       <CopyToClipboard 
@@ -550,9 +523,8 @@ const Base: React.FC<Props> = ({
             margin: 'auto'
           }}
           >
-        <button>Copy to clipboard</button>
+        <button>{copied ? 'Copied!' : 'Copy to clipboard'}</button>
         </CopyToClipboard>
-        {copied && <Text color='blue' fontSize='12px'>Copied!</Text>}
     </Box>
     }
     
@@ -575,6 +547,12 @@ const Base: React.FC<Props> = ({
       }
       </Box>
     </Flex>
+
+    {showEnding &&
+    <Box margin='auto' display='block'>
+      <Text fontSize='17px' textAlign='center'>{ENDING_BOX}</Text>
+    </Box>
+    }
       
     {!showEnding &&
     <>

@@ -3,3 +3,8 @@ body {
   font-family: "Times New Roman", Times, serif;
   text-align: left;
 }
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
