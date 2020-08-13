@@ -453,18 +453,19 @@ const Base: React.FC<Props> = ({
   return <>
     {showConfirm && 
       <>
-      <Box width={0.4} 
+      <Box
         display='block' 
         style={{
+          width: '60%',
           background: '#f0f0f0',
-          position: 'fixed',
+          position: 'absolute',
           left: '50%',
-          top: '35%',
-          //transform: 'translate(-50%, -50%)'
+          top: '40%',
+          transform: 'translate(-50%, -50%)'
         }}>
       {showIntro &&
         <Box
-        fontSize={3}>
+        fontSize={3} style={{textAlign: 'center'}}>
         {INTRO_BOX}
         <br></br>
         <Flex>
@@ -472,7 +473,7 @@ const Base: React.FC<Props> = ({
             bg='blue'
             {...defaultFontProps}
             sx={menuStyles}
-            onClick={() => {setShowIntro(false); setShowConfirm(false)}}>Confirm</Button>
+            onClick={() => {setShowIntro(false); setShowConfirm(false)}}>Start</Button>
         </Flex>
         
       </Box>
@@ -499,7 +500,7 @@ const Base: React.FC<Props> = ({
           </Box>
         </Flex>
         
-      </Box>
+        </Box>
       }
       
       </Box>

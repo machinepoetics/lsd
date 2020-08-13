@@ -57,7 +57,7 @@ const App: React.FC = () =>
 <Box width="40%" marginTop="25px">
 <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdaCCk0ugceOjbN3NpCc0rzHoJ-LScOKHj3vWb150C5yWdXUg/viewform?embedded=true" width="100%" height="100%" frameBorder="0">Loading…</iframe>
 </Box>
-<Box px={3} width="60%">
+<Box px={3} width="60%" padding="0" style={{position: 'relative'}}> 
     <Heading
       mb={3}
       {...defaultFontProps}
