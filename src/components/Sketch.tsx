@@ -388,9 +388,10 @@ const Base: React.FC<Props> = ({
 
   const getCoordinates = (event: MouseEvent) => {
     const canvas: HTMLCanvasElement | null = canvasRef.current
+    var rect = canvas.getBoundingClientRect();
     return {
-      x: event.pageX - canvas.offsetLeft,
-      y: event.pageY - canvas.offsetTop
+      x: event.clientX - rect.left,//canvas.offsetLeft,
+      y: event.clientY - rect.top//canvas.offsetTop
     }
   }
 
