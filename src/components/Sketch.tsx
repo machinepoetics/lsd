@@ -288,7 +288,16 @@ const Base: React.FC<Props> = ({
 
         const ratio = (totalDist - newCurve.remainingDist) / totalDist
         const dir = normalize(lerpVector(curve.direction, newCurve.direction, ratio))
+
+        if(section == 2) {
+          const multiplier = 1 - newCurve.direction.x * curve.direction.x - newCurve.direction.y - curve.direction.y;
+          setStrength(multiplier);
+        }
+        else {
+          setStrength(1);
+        }
         let newPos = applyStyle(pos, dir, newIndex)
+
         //newCurve.strokeDirection = getDir(newCurve.lastStroke, newPos)
         //const temp = lerpVector(newCurve.lastStroke, lastMousePosition, 0.5)
         //context.quadraticCurveTo(temp.x, temp.y, newPos.x, newPos.y)
@@ -309,7 +318,7 @@ const Base: React.FC<Props> = ({
       setStyleIndex(newIndex)
       setCurve(newCurve)
     }
-  }, [styleIndex, styleData, curve, isPainting, lastMousePosition, sequence, showConfirm])
+  }, [styleIndex, styleData, curve, isPainting, lastMousePosition, sequence, showConfirm, strength])
   
   const onMouseUp = useCallback((event: MouseEvent) => {
     if (!canvasRef || !canvasRef.current || showConfirm)
@@ -399,6 +408,7 @@ const Base: React.FC<Props> = ({
     const sx : number = styleData.dx[index]
     const sy : number = styleData.dy[index]
     const bitang = {x: -dir.y, y: dir.x}
+    console.log(strength);
     return {
       x: pos.x + (dir.x * sx + bitang.x * sy) * strength, 
       y: pos.y + (dir.y * sx + bitang.y * sy) * strength
