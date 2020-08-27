@@ -289,13 +289,15 @@ const Base: React.FC<Props> = ({
         const ratio = (totalDist - newCurve.remainingDist) / totalDist
         const dir = normalize(lerpVector(curve.direction, newCurve.direction, ratio))
 
+        var baseStrength = PARAMETERS_GROUP[SECTION_PARAMETERS[section]].strength;
+        var multiplier;
         if(section == 2) {
-          const multiplier = 1 - newCurve.direction.x * curve.direction.x - newCurve.direction.y - curve.direction.y;
-          setStrength(multiplier);
+          multiplier = 1 - newCurve.direction.x * curve.direction.x - newCurve.direction.y - curve.direction.y;
         }
         else {
-          setStrength(1);
+          multiplier = 1;
         }
+        setStrength(baseStrength * multiplier);
         let newPos = applyStyle(pos, dir, newIndex)
 
         //newCurve.strokeDirection = getDir(newCurve.lastStroke, newPos)
@@ -408,7 +410,6 @@ const Base: React.FC<Props> = ({
     const sx : number = styleData.dx[index]
     const sy : number = styleData.dy[index]
     const bitang = {x: -dir.y, y: dir.x}
-    console.log(strength);
     return {
       x: pos.x + (dir.x * sx + bitang.x * sy) * strength, 
       y: pos.y + (dir.y * sx + bitang.y * sy) * strength
