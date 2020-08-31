@@ -1,7 +1,7 @@
 
 export const DEBUG = true
 
-export const DRAWING_TASKS = ['an apple', 'a tree', 'a heart', 'a house', 'a sheep']
+export const DRAWING_TASKS = ['a cat', 'a face', 'a sheep' ]
 
 export const PARAMETERS_GROUP = {
     'control': {
@@ -9,12 +9,12 @@ export const PARAMETERS_GROUP = {
         sampleInterval: 2
     },
     'weak': {
-        strength: 1,
-        sampleInterval: 8
+        strength: 0.8,
+        sampleInterval: 6
     },
     'strong': {
-        strength: 1.7,
-        sampleInterval: 8
+        strength: 1.4,
+        sampleInterval: 6
     }
 }
 
