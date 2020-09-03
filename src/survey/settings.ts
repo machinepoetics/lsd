@@ -9,11 +9,11 @@ export const PARAMETERS_GROUP = {
         sampleInterval: 2
     },
     'weak': {
-        strength: 1.0,
+        strength: 0.9,
         sampleInterval: 6
     },
     'strong': {
-        strength: 1.5,
+        strength: 1.3,
         sampleInterval: 6
     }
 }
