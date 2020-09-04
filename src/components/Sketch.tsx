@@ -131,8 +131,8 @@ const Base: React.FC<Props> = ({
   const [curve, setCurve] = useState({
     direction: {x:0, y:0},
     lastStroke: {x:0, y:0},
-    strokeDirection: {x:0, y:0},
-    remainingDist: 0
+    remainingDist: 0,
+    angle: null
   })
 
   const eraseSurveyCanvas = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
@@ -269,12 +269,22 @@ const Base: React.FC<Props> = ({
     setLastMousePosition(pos)
 
     const newCurve = curve
+    const lastAngle = curve.angle
 
     if (!!pos && !!lastMousePosition) {
       const dir = getDir(lastMousePosition, pos)
       newCurve.direction = dir
-      if (!isPainting) newCurve.strokeDirection = dir
+      if (!curve.angle) {
+        // means that the mouse button was just pressed
+        newCurve.angle = Math.atan2(dir.y, dir.x);
+      }
+      else {
+        // EMA for smoothing
+        newCurve.angle = lerpAngle(curve.angle, Math.atan2(dir.y, dir.x), 0.2);
+      }
     }
+    else {return;}
+
     if (isPainting) {
       const canvas: HTMLCanvasElement = canvasRef.current
       const context = canvas.getContext('2d')
@@ -286,23 +296,20 @@ const Base: React.FC<Props> = ({
       let newIndex = styleIndex
       while (newCurve.remainingDist > sampleInterval) {
 
-        const ratio = (totalDist - newCurve.remainingDist) / totalDist
-        const dir = normalize(lerpVector(curve.direction, newCurve.direction, ratio))
-
         var baseStrength = PARAMETERS_GROUP[SECTION_PARAMETERS[section]].strength;
         var multiplier;
         if(section == 2) {
-          multiplier = 1 - newCurve.direction.x * curve.direction.x - newCurve.direction.y - curve.direction.y;
+          const deltaAngle = newCurve.angle - lastAngle
+          //console.log(deltaAngle, newCurve.angle)
+          multiplier = (clamp(Math.abs(deltaAngle), 0.1, 0.3) - 0.1) * 10;
+          //console.log("*",multiplier)
         }
         else {
           multiplier = 1;
         }
         setStrength(baseStrength * multiplier);
-        let newPos = applyStyle(pos, dir, newIndex)
+        let newPos = applyStyle(pos, normalize(newCurve.direction), newIndex)
 
-        //newCurve.strokeDirection = getDir(newCurve.lastStroke, newPos)
-        //const temp = lerpVector(newCurve.lastStroke, lastMousePosition, 0.5)
-        //context.quadraticCurveTo(temp.x, temp.y, newPos.x, newPos.y)
         newPos = lerpVector(newCurve.lastStroke, newPos, 0.3)
         context.lineTo(newPos.x, newPos.y)
         context.stroke()
@@ -315,7 +322,6 @@ const Base: React.FC<Props> = ({
         newCurve.lastStroke = newPos
         newIndex = newIndex < styleData.dx.length - 1 ? newIndex + 1 : 0
         newCurve.remainingDist -= sampleInterval
-        newCurve.lastStroke = newPos
       }
       setStyleIndex(newIndex)
       setCurve(newCurve)
@@ -421,11 +427,30 @@ const Base: React.FC<Props> = ({
     return d2 > 0 ? Math.sqrt(d2) : 0
   }
 
+  const lerp = (a : number, b : number, t : number) => {
+    return a + (b - a) * t;
+  }
+
   const lerpVector = (a : Coordinate, b : Coordinate, t : number) => {
     return {
       x : a.x + (b.x - a.x)*t,
       y : a.y + (b.y - a.y)*t
     }
+  }
+
+  const clamp = (x : number, a : number, b : number) => {
+    if (x < a) return a;
+    if (x > b) return b;
+    return x;
+  }
+
+  const lerpAngle = (a : number, b : number, t : number) => {
+    const x = b - a;
+    const PI2 = 2.0 * Math.PI;
+    var delta = clamp(x - Math.floor(x / PI2) * PI2, 0.0, PI2);
+    if (delta > Math.PI)
+        delta -= Math.PI * 2;
+    return a + delta * clamp(t, 0, 1);
   }
 
   const normalize = (a : Coordinate) => {
