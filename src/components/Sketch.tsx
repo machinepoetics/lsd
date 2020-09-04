@@ -280,7 +280,7 @@ const Base: React.FC<Props> = ({
       }
       else {
         // EMA for smoothing
-        newCurve.angle = lerpAngle(curve.angle, Math.atan2(dir.y, dir.x), 0.2);
+        newCurve.angle = lerpAngle(curve.angle, Math.atan2(dir.y, dir.x), 0.1);
       }
     }
     else {return;}
@@ -301,7 +301,7 @@ const Base: React.FC<Props> = ({
         if(section == 2 || section == 3) {
           const deltaAngle = newCurve.angle - lastAngle
           console.log("@ delta angle =", deltaAngle)
-          multiplier = (clamp(Math.abs(deltaAngle), 0.1, 0.3) - 0.1) * 10;
+          multiplier = (clamp(Math.abs(deltaAngle), 0.01, 0.2) - 0.01) * 10;
           console.log("* multiplier =", multiplier)
         }
         else {
