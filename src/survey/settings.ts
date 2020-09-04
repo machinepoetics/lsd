@@ -1,5 +1,5 @@
 
-export const DEBUG = true
+export const DEBUG = false
 
 export const DRAWING_TASKS = ['a cat', 'a face', 'a sheep' ]
 
