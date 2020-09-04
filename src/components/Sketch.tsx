@@ -300,9 +300,9 @@ const Base: React.FC<Props> = ({
         var multiplier;
         if(section == 2) {
           const deltaAngle = newCurve.angle - lastAngle
-          //console.log(deltaAngle, newCurve.angle)
+          console.log("@ delta angle =", deltaAngle)
           multiplier = (clamp(Math.abs(deltaAngle), 0.1, 0.3) - 0.1) * 10;
-          //console.log("*",multiplier)
+          console.log("* multiplier =", multiplier)
         }
         else {
           multiplier = 1;
