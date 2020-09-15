@@ -298,7 +298,7 @@ const Base: React.FC<Props> = ({
 
         var baseStrength = PARAMETERS_GROUP[SECTION_PARAMETERS[section]].strength;
         var multiplier;
-        if(section == 2 || section == 3) {
+        if(section == 2) {
           const deltaAngle = newCurve.angle - lastAngle
           console.log("@ delta angle =", deltaAngle)
           multiplier = (clamp(Math.abs(deltaAngle), 0.01, 0.2) - 0.01) * 10;
