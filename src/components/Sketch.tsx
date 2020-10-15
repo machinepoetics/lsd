@@ -76,14 +76,16 @@ function shuffleArray(array) {
   return array
 }
 
-const TASKS = shuffleArray(DRAWING_TASKS).slice(0, 3)
+const TASKS = shuffleArray(DRAWING_TASKS).slice(0, 4)
 const PROMPTS = {
   1: "Please draw " + TASKS[0],
   2: "Please draw " + TASKS[1],
-  3: "Please draw " + TASKS[2]
+  3: "Please draw " + TASKS[2],
+  4: "Please draw " + TASKS[3]
 }
 
 let SECTION_PARAMETERS;
+/*
 if (RANDOMIZE) {
   let arr = shuffleArray(['control', 'weak', 'strong'])
   SECTION_PARAMETERS = {
@@ -93,12 +95,16 @@ if (RANDOMIZE) {
   }
 }
 else{ 
+  */
   SECTION_PARAMETERS = {
     1: 'control',
     2: 'weak',
-    3: 'strong'
+    3: 'weak',
+    4: 'strong'
   }
+  /*
 }
+*/
 
 const Base: React.FC<Props> = ({
   width,
@@ -124,6 +130,7 @@ const Base: React.FC<Props> = ({
     3: false
   })
   const [sequence, setSequence] = useState([])
+  const [directionChange, setDirectionChange] = useState([])
   const [copied, setCopied] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -164,11 +171,16 @@ const Base: React.FC<Props> = ({
       id: 3,
       text: "Section 3",
       fx: () => { tryChangeSection(3) }
+    },
+    {
+      id: 4,
+      text: "Section 4",
+      fx: () => { tryChangeSection(4) }
     }
   ]
 
   useEffect(() => {
-    if (section > 3) {
+    if (section > 4) {
       setShowConfirm(false)
       setShowEnding(true)
       uploadResults()
@@ -193,7 +205,7 @@ const Base: React.FC<Props> = ({
   const uploadResults = () => {
     console.log('upload results...')
     console.log(submission);
-    sendSketch(userId, JSON.stringify(submission), DEBUG)
+    //sendSketch(userId, JSON.stringify(submission), DEBUG)
   }
 
   useEffect(() => {
@@ -236,28 +248,38 @@ const Base: React.FC<Props> = ({
   }, [reloadStyle, erase])
 
   const onMouseDown = useCallback((event: MouseEvent) => {
+    console.log("mouse down")
+
     if (!canvasRef || !canvasRef.current || showConfirm)
         return
+
     const coordinates = getCoordinates(event)
+    setLastMousePosition(coordinates) //todo: check
+
     const canvas: HTMLCanvasElement = canvasRef.current
     const context = canvas.getContext('2d')
+    
     if (!!coordinates && !!context) {
+
       const newCurve = curve
-
-      const pos = applyStyle(coordinates, newCurve.direction, styleIndex)
       newCurve.remainingDist = 0
-      newCurve.lastStroke = pos
-      context.beginPath()
-      context.moveTo(pos.x, pos.y)
-      const now = Date.now()
-      setSequence([...sequence, {type: 'start', x: pos.x, y: pos.y, t: now}])
+      newCurve.lastStroke = coordinates //pos //use raw info
+      newCurve.angle = null //todo: shouldn't angle be set to null?
 
+      //const pos = applyStyle(coordinates, newCurve.direction, styleIndex) //todo: shouldn't??
+
+      const now = Date.now()
+      setSequence([...sequence, {type: 'start', x: coordinates.x, y: coordinates.y, t: now}])
+      redrawCanvas(1)
+      
+      //setSequence([...sequence, {type: 'start', x: pos.x, y: pos.y, t: now}])
+      setDirectionChange([]) //todo: ?
       setCurve(newCurve)
       setIsPainting(true)
 
       // hide cursor
-      setCursorStyle('none');
-      
+      // TODO: none vs auto
+      setCursorStyle('auto')
     }
   },[styleIndex, styleData, curve, sequence, showConfirm])
 
@@ -272,11 +294,13 @@ const Base: React.FC<Props> = ({
     const lastAngle = curve.angle
 
     if (!!pos && !!lastMousePosition) {
-      const dir = getDir(lastMousePosition, pos)
+      const dir = getDir(lastMousePosition, pos) //todo: isn't this always zero?
       newCurve.direction = dir
+
       if (!curve.angle) {
         // means that the mouse button was just pressed
-        newCurve.angle = Math.atan2(dir.y, dir.x);
+        newCurve.angle = Math.atan2(dir.y, dir.x); //todo: again isn't this always 0?
+        console.log("null angle", newCurve.angle) //which means we should null the angle upon new stroke
       }
       else {
         // EMA for smoothing
@@ -292,37 +316,93 @@ const Base: React.FC<Props> = ({
 
       const dist = getDistance(pos, lastMousePosition)
       newCurve.remainingDist += dist
-      const totalDist = newCurve.remainingDist
+      //const totalDist = newCurve.remainingDist //not used now
+
       let newIndex = styleIndex
+      
       while (newCurve.remainingDist > sampleInterval) {
 
         var baseStrength = PARAMETERS_GROUP[SECTION_PARAMETERS[section]].strength;
-        var multiplier;
-        if(section == 2) {
-          const deltaAngle = newCurve.angle - lastAngle
-          console.log("@ delta angle =", deltaAngle)
-          multiplier = (clamp(Math.abs(deltaAngle), 0.01, 0.2) - 0.01) * 10;
-          console.log("* multiplier =", multiplier)
-        }
-        else {
-          multiplier = 1;
-        }
-        setStrength(baseStrength * multiplier);
-        let newPos = applyStyle(pos, normalize(newCurve.direction), newIndex)
+        var multiplier = 0
+        var transformPeriod = 1
+        var distMultiplier = 1;
 
+        if(dist < 2) {
+          distMultiplier = ( clamp(dist, 1.2, 2.0) - 1.0 ) * 0.5
+        }
+
+        //compute style multiplier
+        if(section == 1){
+          multiplier = 0;
+        }
+        else if(section == 2) {
+          const deltaAngle = newCurve.angle - lastAngle
+          multiplier = (clamp(Math.abs(deltaAngle), 0.01, 0.2) - 0.01) * 10
+          transformPeriod = 20;
+          //console.log("* multiplier =", multiplier)
+        }
+        else if (section == 3) {
+          //same but with no period
+          const deltaAngle = newCurve.angle - lastAngle
+          multiplier = (clamp(Math.abs(deltaAngle), 0.01, 0.2) - 0.01) * 10
+        }
+        else if(section == 4) {
+          //distance based
+          //multiplier = (clamp(getDistance(lastMousePosition, pos), 2, 10) - 2) * 0.3
+
+          //dir change based
+          const deltaAngle = newCurve.angle - lastAngle
+
+          var dirChange = directionChange
+          dirChange.push(deltaAngle)
+          if(dirChange.length > 20) {
+            dirChange.shift()
+          }
+          setDirectionChange(dirChange)
+
+          if(dirChange.length > 1){
+            var numDirChange = 0.0
+            for (var i = 0; i < dirChange.length - 1; i++) {
+              if(dirChange[i] * dirChange[i+1] < 0) {
+                numDirChange += 1.0
+              }
+            }
+            multiplier = numDirChange / 2
+          }
+          else {
+            multiplier = 1.
+          }
+
+          transformPeriod = 20;
+
+          console.log('dir change', dirChange, 'multiplier', multiplier * distMultiplier)
+        }
+
+        setStrength(baseStrength * multiplier * distMultiplier);
+        let st = getStyle(pos, normalize(newCurve.direction), styleIndex)
+
+        /* //previous drawing code
+        let newPos = applyStyle(pos, normalize(newCurve.direction), newIndex)
         newPos = lerpVector(newCurve.lastStroke, newPos, 0.3)
         context.lineTo(newPos.x, newPos.y)
         context.stroke()
+        */
+
+        let newPos = lerpVector(newCurve.lastStroke, {x: pos.x + st.x, y: pos.y + st.y }, 0.3)
+        st = {x: newPos.x - pos.x, y: newPos.y - pos.y }
 
         const now = Date.now()
         setSequence([...sequence, 
-          {type: 'lineTo', x: newPos.x, y: newPos.y, t: now}, 
+          {type: 'lineTo', x: pos.x, y: pos.y, t: now, sx: st.x, sy: st.y}, 
           {type: 'mouseTo', x: pos.x, y: pos.y, t: now}])
 
-        newCurve.lastStroke = newPos
+        redrawCanvas(transformPeriod)
+
+        newCurve.lastStroke = {x: newPos.x, y: newPos.y } //newPos vs pos
         newIndex = newIndex < styleData.dx.length - 1 ? newIndex + 1 : 0
         newCurve.remainingDist -= sampleInterval
       }
+
       setStyleIndex(newIndex)
       setCurve(newCurve)
     }
@@ -339,21 +419,25 @@ const Base: React.FC<Props> = ({
     if (!context) return
 
     if (!!coordinates && isPainting) {
+      /*
       const pos = applyStyle(coordinates, curve.direction, styleIndex)
       //context.quadraticCurveTo(curve.lastStroke.x, curve.lastStroke.y, pos.x, pos.y)
       context.lineTo(pos.x, pos.y)
       context.stroke()
+      */
 
       const now = Date.now()
       setSequence([...sequence, 
-        {type: 'lineTo', x: pos.x, y: pos.y, t: now}, 
+        {type: 'lineTo', x: coordinates.x, y: coordinates.y, t: now, sx: 0, sy: 0}, 
         {type: 'mouseTo', x: coordinates.x, y: coordinates.y, t: now},
         {type: 'end', t: now}
       ])
     }
-    context.closePath()
+
+    redrawCanvas(1)
 
     setIsPainting(false)
+
     // show cursor
     setCursorStyle('auto');
   }, [styleIndex, styleData, curve, isPainting, sequence, showConfirm])
@@ -403,6 +487,48 @@ const Base: React.FC<Props> = ({
     }
   }, [onMouseUp])
 
+  const redrawCanvas = (transfromPeriod) => {
+
+    const canvas: HTMLCanvasElement = canvasRef.current
+    const context = canvas.getContext('2d')
+    var mult = 1 / transfromPeriod
+
+    if (!!context) {
+      context.clearRect(0, 0, canvas.width, canvas.height)
+
+      const size_seq = sequence.length
+      
+      for (var i = 0; i < sequence.length - 1; i++) {
+        if(sequence[i].type == 'start') {
+          context.beginPath()
+          context.moveTo(sequence[i].x, sequence[i].y)
+        }
+        else if (sequence[i].type == 'end') {
+          context.lineTo(sequence[i].x, sequence[i].y)
+          context.stroke()
+          context.closePath()
+        }
+        else if (sequence[i].type == 'lineTo') {
+          if( i >= size_seq - transfromPeriod + 1) {
+            let p = {
+              x: sequence[i].x + (size_seq - i) * sequence[i].sx * mult,
+              y: sequence[i].y + (size_seq - i) * sequence[i].sy * mult,
+            }
+            //let lp = lerpVector({x: sequence[i].x, y: sequence[i].y}, p, 0.3)
+            context.lineTo(p.x, p.y)
+            context.stroke()
+          }
+          else {
+            context.lineTo(sequence[i].x + sequence[i].sx, sequence[i].y + sequence[i].sy)
+            context.stroke()
+          }
+        }
+      }
+      context.closePath()
+      //context.moveTo(pos.x, pos.y)
+    }
+  }
+
   const getCoordinates = (event: MouseEvent) => {
     const canvas: HTMLCanvasElement | null = canvasRef.current
     var rect = canvas.getBoundingClientRect();
@@ -412,10 +538,20 @@ const Base: React.FC<Props> = ({
     }
   }
 
+  const getStyle = (pos : Coordinate, dir : Coordinate, index : number): Coordinate => {
+    const sx : number = styleData.dx[index]
+    const sy : number = styleData.dy[index]
+    const bitang = {x: -dir.y, y: dir.x} //TODO: is it correct?
+    return {
+      x: (dir.x * sx + bitang.x * sy) * strength, 
+      y: (dir.y * sx + bitang.y * sy) * strength
+    }
+  }
+
   const applyStyle = (pos : Coordinate, dir : Coordinate, index : number): Coordinate => {
     const sx : number = styleData.dx[index]
     const sy : number = styleData.dy[index]
-    const bitang = {x: -dir.y, y: dir.x}
+    const bitang = {x: -dir.y, y: dir.x} //TODO: is it correct?
     return {
       x: pos.x + (dir.x * sx + bitang.x * sy) * strength, 
       y: pos.y + (dir.y * sx + bitang.y * sy) * strength
@@ -471,6 +607,7 @@ const Base: React.FC<Props> = ({
       dir.y /= len;
     }
     return dir
+    //todo: how to deal with zero case
   }
 
   const menuStyles = {
