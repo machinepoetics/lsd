@@ -6,7 +6,7 @@ export const DRAWING_TASKS = ['a cat', 'a face', 'a sheep', 'a face' ]
 export const PARAMETERS_GROUP = {
     'control': {
         strength: 0,
-        sampleInterval: 2
+        sampleInterval: 3
     },
     'weak': {
         strength: 1.8,//0.25,
